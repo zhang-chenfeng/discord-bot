@@ -4,7 +4,7 @@ import queue
 from discord.ext import commands
 from dotenv import load_dotenv
 
-import search
+import search as websearch
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -19,7 +19,7 @@ async def on_ready():
 
 @bot.command(name='search')
 async def search(ct, *args):
-    response = search.danbooruSearch(args)
+    response = websearch.danbooruSearch(args)
     if response:
         sent = await ct.send(response)
         try:
