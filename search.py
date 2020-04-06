@@ -1,10 +1,13 @@
+import os
+
 import requests
+from dotenv import load_dotenv
 
 
 def danbooruSearch(tags):
     param = {
         'limit': 1,
-        'tags': tags,
+        'tags': " ".join(tags[:2]),
         'random': 'true'
     }
 
@@ -12,16 +15,19 @@ def danbooruSearch(tags):
 
     if not r.ok:
         print(str(r))
+        return
     
     res = r.json()
     if res:
         data = res[0]
-        return data['file_url']
+        return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
 
 
 # more searches later
 # but danbooru is all you need right
 
 if __name__ == "__main__":
-    tag = input("> ")
+    tag = input("> ").split()
     print(danbooruSearch(tag))
+    # load_dotenv()
+    # TOKEN = os.getenv('DANBOORU_KEY')
