@@ -20,8 +20,10 @@ def danbooruSearch(tags):
     res = r.json()
     if res:
         data = res[0]
-        return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
-
+        try:
+            return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
+        except KeyError:
+            return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
 
 # more searches later
 # but danbooru is all you need right
