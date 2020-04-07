@@ -1,6 +1,7 @@
 import os
 import queue
 
+import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -10,25 +11,33 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='-')
 
+play = discord.Activity(name="with loli", type=discord.ActivityType.playing)
+watch = discord.Activity(name="loli", type=discord.ActivityType.watching)
+listen = discord.Activity(name="loli", type=discord.ActivityType.listening)
+
+
 msg_log = queue.LifoQueue()
 shortcut = {
     'kc': 'kantai_collection',
     'al': 'azur_lane',
     'gf': 'girls_frontline',
     'ak': 'arknights',
-    'pk': 'pokemon'
+    'pk': 'pokemon',
     'fgo': 'fate/grand_order'
     }
+qe = ""
 
 @bot.event
 async def on_ready():
     print("{} connected".format(bot.user))
+    await bot.change_presence(activity=play)
 
 
 @bot.command(name='search', description="search for an image on danbooru\nlimit to 2 tags because I am poor")
 async def search(ct, *args):
-    cleaned = list(map(short, args))
-    response = websearch.danbooruSearch(cleaned)
+    global qe
+    qe = list(map(short, args))
+    response = websearch.danbooruSearch(qe)
     if response:
         sent = await ct.send(response)
         msg_log.put(sent)
@@ -43,6 +52,16 @@ async def delete(ct):
         await msg.delete()
     except queue.Empty:
         pass
+
+
+@bot.command(name='re', description="calls the last search again")
+async def rerun(ct): # lmao nice copy paste
+    response = websearch.danbooruSearch(qe)
+    if response:
+        sent = await ct.send(response)
+        msg_log.put(sent)
+    else:
+        await ct.send("nothing found")
 
 
 @bot.command(name='exec')
