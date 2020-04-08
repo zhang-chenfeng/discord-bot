@@ -4,8 +4,7 @@ import queue
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-
-import search as websearch
+from requests import get
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -25,7 +24,7 @@ shortcut = {
     'pk': 'pokemon',
     'fgo': 'fate/grand_order'
     }
-qe = ""
+bot.qe = ""
 
 @bot.event
 async def on_ready():
@@ -35,14 +34,8 @@ async def on_ready():
 
 @bot.command(name='search', description="search for an image on danbooru\nlimit to 2 tags because I am poor")
 async def search(ct, *args):
-    global qe
-    qe = list(map(short, args))
-    response = websearch.danbooruSearch(qe)
-    if response:
-        sent = await ct.send(response)
-        msg_log.put(sent)
-    else:
-        await ct.send("nothing found")
+    bot.qe = list(map(short, args))
+    await rerun(ct)
 
 
 @bot.command(name='del', description="deletes the last image sent")
@@ -56,7 +49,7 @@ async def delete(ct):
 
 @bot.command(name='re', description="calls the last search again")
 async def rerun(ct): # lmao nice copy paste
-    response = websearch.danbooruSearch(qe)
+    response = await danbooruSearch(bot.qe)
     if response:
         sent = await ct.send(response)
         msg_log.put(sent)
@@ -67,6 +60,28 @@ async def rerun(ct): # lmao nice copy paste
 @bot.command(name='exec')
 async def ex(ct, cmd):
     exec(cmd)
+
+
+async def danbooruSearch(tags):
+    param = {
+        'limit': 1,
+        'tags': " ".join(tags[:2]),
+        'random': 'true'
+    }
+
+    r = get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
+
+    if not r.ok:
+        print(str(r))
+        return
+    
+    res = r.json()
+    if res:
+        data = res[0]
+        try:
+            return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
+        except KeyError:
+            return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
 
 
 def short(x):
