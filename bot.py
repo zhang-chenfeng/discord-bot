@@ -21,15 +21,16 @@ shortcut = {
     'al': 'azur_lane',
     'gf': 'girls_frontline',
     'ak': 'arknights',
-    'pk': 'pokemon',
-    'fgo': 'fate/grand_order'
+    'fgo': 'fate/grand_order',
+    'pk': 'pokemon'
+    # any more?
     }
 bot.qe = ""
 
 @bot.event
 async def on_ready():
     print("{} connected".format(bot.user))
-    await bot.change_presence(activity=play)
+    await bot.change_presence(activity=watch)
 
 
 @bot.command(name='search', description="search for an image on danbooru\nlimit to 2 tags because I am poor")
@@ -48,7 +49,7 @@ async def delete(ct):
 
 
 @bot.command(name='re', description="calls the last search again")
-async def rerun(ct): # lmao nice copy paste
+async def rerun(ct):
     response = await danbooruSearch(bot.qe)
     if response:
         sent = await ct.send(response)
@@ -71,7 +72,7 @@ async def danbooruSearch(tags):
 
     r = get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
 
-    if not r.ok:
+    if not r.ok: # this shouldn't happen
         print(str(r))
         return
     
@@ -84,6 +85,7 @@ async def danbooruSearch(tags):
             return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
 
 
+# for shortcut command- ie. yuudachi,kc -> yuudachi_(kantai_collection)
 def short(x):
     a = x.split(",")
     if len(a) == 2:
