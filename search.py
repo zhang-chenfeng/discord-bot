@@ -50,10 +50,17 @@ class Booru(commands.Cog):
             'tags': " ".join(tags[:2]),
             'random': 'true'
         }
-        r = get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
+        try:
+            r = get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
 
-        if not r.ok: # this shouldn't happen
-            print(str(r))
+        except err: # this shouldn't happen
+            with open('log.txt', 'a') as f:
+                f.write(f"request failed:   {str(err)}")
+            return
+
+        if not r.ok: # this shouldn't happen either
+            with open('log.txt', 'a') as f:
+                f.write(f"response not ok:   {str(r)}")
             return
 
         res = r.json()
