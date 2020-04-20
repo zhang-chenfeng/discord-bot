@@ -1,34 +1,80 @@
-import os
+import queue
 
-import requests
+from requests import get
+from discord.ext import commands
+
+class Booru(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.qe = ""
+        self.msg_log = queue.LifoQueue()
+        self.shortcut = {
+            'kc': 'kantai_collection',
+            'al': 'azur_lane',
+            'gf': 'girls_frontline',
+            'ak': 'arknights',
+            'fgo': 'fate/grand_order',
+            'pk': 'pokemon'
+            # any more?
+        }
+
+    @commands.command(description="calls the last search again")
+    async def re(self, ct):
+        response = await self.search(self.qe)
+        if response:
+            sent = await ct.send(response)
+            self.msg_log.put(sent)
+        else:
+            await ct.send("nothing found")
 
 
-def danbooruSearch(tags):
-    param = {
-        'limit': 1,
-        'tags': " ".join(tags[:2]),
-        'random': 'true'
-    }
+    @commands.command(description="search for an image on danbooru\nlimit to 2 tags because I am poor")
+    async def br(self, ct, *args):
+        self.qe = list(map(self.short, args))
+        await self.re(ct)
 
-    r = requests.get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
 
-    if not r.ok:
-        print(str(r))
-        return
-    
-    res = r.json()
-    if res:
-        data = res[0]
+    @commands.command(name='del', description="deletes the last image sent")
+    async def delete(self, ct):
         try:
-            return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
-        except KeyError:
-            return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
+            msg = self.msg_log.get(0)
+            await msg.delete()
+        except queue.Empty:
+            pass
 
-# more searches later
-# but danbooru is all you need right
 
-if __name__ == "__main__":
-    tag = input("> ").split()
-    print(danbooruSearch(tag))
-    # load_dotenv()
-    # TOKEN = os.getenv('DANBOORU_KEY')
+    @staticmethod
+    async def search(tags):
+        param = {
+            'limit': 1,
+            'tags': " ".join(tags[:2]),
+            'random': 'true'
+        }
+        r = get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
+
+        if not r.ok: # this shouldn't happen
+            print(str(r))
+            return
+
+        res = r.json()
+        if res:
+            data = res[0]
+            try:
+                return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
+            except KeyError:
+                return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
+
+
+    # for shortcut command- ie. yuudachi,kc -> yuudachi_(kantai_collection)
+    @staticmethod
+    def short(x):
+        a = x.split(",")
+        if len(a) == 2:
+            try:
+                a[1] = self.shortcut[a[1]]
+            except KeyError:
+                pass
+            return f"{a[0]}_({a[1]})"
+        return x
+    
+        

@@ -1,10 +1,10 @@
 import os
-import queue
 
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from requests import get
+
+import search
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -15,86 +15,12 @@ watch = discord.Activity(name="loli", type=discord.ActivityType.watching)
 listen = discord.Activity(name="loli", type=discord.ActivityType.listening)
 
 
-msg_log = queue.LifoQueue()
-shortcut = {
-    'kc': 'kantai_collection',
-    'al': 'azur_lane',
-    'gf': 'girls_frontline',
-    'ak': 'arknights',
-    'fgo': 'fate/grand_order',
-    'pk': 'pokemon'
-    # any more?
-    }
-bot.qe = ""
-
 @bot.event
 async def on_ready():
     print("{} connected".format(bot.user))
     await bot.change_presence(activity=watch)
 
 
-@bot.command(name='search', description="search for an image on danbooru\nlimit to 2 tags because I am poor")
-async def search(ct, *args):
-    bot.qe = list(map(short, args))
-    await rerun(ct)
-
-
-@bot.command(name='del', description="deletes the last image sent")
-async def delete(ct):
-    try:
-        msg = msg_log.get(0)
-        await msg.delete()
-    except queue.Empty:
-        pass
-
-
-@bot.command(name='re', description="calls the last search again")
-async def rerun(ct):
-    response = await danbooruSearch(bot.qe)
-    if response:
-        sent = await ct.send(response)
-        msg_log.put(sent)
-    else:
-        await ct.send("nothing found")
-
-
-@bot.command(name='exec')
-async def ex(ct, cmd):
-    exec(cmd)
-
-
-async def danbooruSearch(tags):
-    param = {
-        'limit': 1,
-        'tags': " ".join(tags[:2]),
-        'random': 'true'
-    }
-
-    r = get(url="https://danbooru.donmai.us/posts.json", params=param, timeout=2)
-
-    if not r.ok: # this shouldn't happen
-        print(str(r))
-        return
-    
-    res = r.json()
-    if res:
-        data = res[0]
-        try:
-            return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
-        except KeyError:
-            return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
-
-
-# for shortcut command- ie. yuudachi,kc -> yuudachi_(kantai_collection)
-def short(x):
-    a = x.split(",")
-    if len(a) == 2:
-        try:
-            a[1] = shortcut[a[1]]
-        except KeyError:
-            pass
-        return f"{a[0]}_({a[1]})"
-    return x
-
+bot.add_cog(search.Booru(bot))
 
 bot.run(TOKEN)
