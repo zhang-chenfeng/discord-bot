@@ -18,6 +18,8 @@ class Booru(commands.Cog):
             'pk': 'pokemon'
             # any more?
         }
+        with open("ok.png", "rb") as k:
+            self.ok_img = discord.File(k)
         
 
     @commands.command(description="calls the last search again")
@@ -68,6 +70,11 @@ class Booru(commands.Cog):
             pass
 
         await ct.send(embed=embed)
+
+
+    @commands.command()
+    async def ok(self, ct):
+        await ct.send(content="ok", file=self.ok_img)
 
 
     @staticmethod
