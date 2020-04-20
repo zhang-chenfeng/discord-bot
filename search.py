@@ -1,6 +1,7 @@
 import queue
 
 from requests import get
+import discord
 from discord.ext import commands
 
 class Booru(commands.Cog):
@@ -17,13 +18,18 @@ class Booru(commands.Cog):
             'pk': 'pokemon'
             # any more?
         }
+        
 
     @commands.command(description="calls the last search again")
     async def re(self, ct):
-        response = await self.search(self.qe)
-        if response:
-            sent = await ct.send(response)
-            self.msg_log.put(sent)
+        data = await self.search(self.qe)
+        if data:
+            try:
+                msg = data['file_url']
+            except KeyError:
+                msg = f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
+            sent = await ct.send(msg)
+            self.msg_log.put((sent, data))
         else:
             await ct.send("nothing found")
 
@@ -37,10 +43,31 @@ class Booru(commands.Cog):
     @commands.command(name='del', description="deletes the last image sent")
     async def delete(self, ct):
         try:
-            msg = self.msg_log.get(0)
+            msg = self.msg_log.get(0)[0]
             await msg.delete()
         except queue.Empty:
             pass
+
+    
+    @commands.command()
+    async def info(self, ct):
+        try:
+            top = self.msg_log.get(0)
+        except queue.Empty:
+            return
+        data = top[1]
+        self.msg_log.put(top)
+        
+        embed = discord.Embed(title=f"https://danbooru.donmai.us/posts/{data['id']}", url=f"https://danbooru.donmai.us/posts/{data['id']}", description=data['created_at'])
+        for cat in "character copyright artist general".split():
+            embed.add_field(name=cat, value=data[f"tag_string_{cat}"].replace("_", "\\_"), inline=cat[0]=='c') # lmao that's so silly but it works
+        embed.set_footer(text="brought to you by CFZ")
+        try:
+            embed.set_thumbnail(url=data['preview_file_url'])
+        except KeyError:
+            pass
+
+        await ct.send(embed=embed)
 
 
     @staticmethod
@@ -65,16 +92,11 @@ class Booru(commands.Cog):
 
         res = r.json()
         if res:
-            data = res[0]
-            try:
-                return f"<https://danbooru.donmai.us/posts/{data['id']}>\n{data['file_url']}"
-            except KeyError:
-                return f"rip no perms to access image data\n<https://danbooru.donmai.us/posts/{data['id']}>"
+            return res[0]
 
 
     # for shortcut command- ie. yuudachi,kc -> yuudachi_(kantai_collection)
-    @staticmethod
-    def short(x):
+    def short(self, x):
         a = x.split(",")
         if len(a) == 2:
             try:
