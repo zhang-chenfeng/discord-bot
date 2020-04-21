@@ -8,7 +8,7 @@ class Booru(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.qe = ""
-        self.msg_log = queue.LifoQueue()
+        self.msg_log = queue.LifoQueue() # need to do something about this
         self.shortcut = {
             'kc': 'kantai_collection',
             'al': 'azur_lane',
@@ -18,9 +18,7 @@ class Booru(commands.Cog):
             'pk': 'pokemon'
             # any more?
         }
-        with open("ok.png", "rb") as k:
-            self.ok_img = discord.File(k)
-        
+
 
     @commands.command(description="calls the last search again")
     async def re(self, ct):
@@ -62,7 +60,7 @@ class Booru(commands.Cog):
         
         embed = discord.Embed(title=f"https://danbooru.donmai.us/posts/{data['id']}", url=f"https://danbooru.donmai.us/posts/{data['id']}", description=data['created_at'])
         for cat in "character copyright artist general".split():
-            embed.add_field(name=cat, value=data[f"tag_string_{cat}"].replace("_", "\\_"), inline=cat[0]=='c') # lmao that's so silly but it works
+            embed.add_field(name=cat, value=data[f"tag_string_{cat}"].replace("_", "\\_"), inline=cat[0]=='c') # lmao that's so stupid but it works
         embed.set_footer(text="brought to you by CFZ")
         try:
             embed.set_thumbnail(url=data['preview_file_url'])
@@ -70,11 +68,6 @@ class Booru(commands.Cog):
             pass
 
         await ct.send(embed=embed)
-
-
-    @commands.command()
-    async def ok(self, ct):
-        await ct.send(content="ok", file=self.ok_img)
 
 
     @staticmethod
@@ -112,5 +105,15 @@ class Booru(commands.Cog):
                 pass
             return f"{a[0]}_({a[1]})"
         return x
-    
-        
+
+
+class Extra(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        with open("ok.png", "rb") as k:
+            self.ok_img = discord.File(k)
+
+
+    @commands.command(description="ok")
+    async def ok(self, ct):
+        await ct.send(content="ok", file=self.ok_img)
