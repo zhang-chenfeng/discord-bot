@@ -1,5 +1,3 @@
-import queue
-
 from requests import get
 import discord
 from discord.ext import commands
