@@ -5,21 +5,21 @@ from discord.ext import commands
 
 
 class Node():
-    def __init__(self, val, dat):
-        self.val, self.dat = val, dat
+    def __init__(self, msg, dat):
+        self.msg, self.dat = msg, dat
         self.next = self.prev = None
 
 
 
-class Log():
+class Log(): # just a stack that dumps the oldest items when oversize
     def __init__(self, maxsize):
         self.head = self.tail = None
-        self.maxsize = maxsize * (maxsize > 2) or 2
+        self.maxsize = maxsize * (maxsize > 2) or 2 # pretty sure code will break if set to 1
         self.size = 0
     
     
-    def put(self, val, dat):
-        n = Node(val, dat)
+    def put(self, msg, dat):
+        n = Node(msg, dat)
         try:
             self.head.prev = n
         except AttributeError:
@@ -41,21 +41,20 @@ class Log():
         try:
             n = self.head
             self.head = n.next
-        except AttributeError:
+        except AttributeError: # log is empty
             raise
-        else:
-            try:
-                self.head.prev = None
-            except AttributeError:
-                self.tail = None
-            self.size -= 1
-            return n
+        try:
+            self.head.prev = None
+        except AttributeError: # last item in log
+            self.tail = None
+        self.size -= 1
+        return n
     
     
     def pr(self):
         a = self.head
         while a is not None:
-            print(a.val, end=", ")
+            print(a.msg, end=", ")
             a = a.next
         print()
 
@@ -134,7 +133,7 @@ class Booru(commands.Cog):
         )
     async def delete(self, ct):
         try:
-            msg = self.msg_log.get().val
+            msg = self.msg_log.get().msg
             await msg.delete()
         except AttributeError:
             pass
@@ -146,7 +145,7 @@ class Booru(commands.Cog):
         if top is None:
             return
         data = top.dat
-        embed = discord.Embed(title=f"https://danbooru.donmai.us/posts/{data['id']}", url=f"https://danbooru.donmai.us/posts/{data['id']}", description=data['created_at'], color=0xcfcfcf)
+        embed = discord.Embed(title=f"https://danbooru.donmai.us/posts/{data['id']}", url=f"https://danbooru.donmai.us/posts/{data['id']}", description=data['created_at'], color=0x0073ff)
         for cat in "character copyright artist general".split():
             embed.add_field(name=cat, value=data[f"tag_string_{cat}"].replace("_", "\\_"), inline=cat[0]=='c') # lmao that's so stupid but it works
         embed.set_footer(text="brought to you by CFZ")
@@ -179,14 +178,15 @@ class Booru(commands.Cog):
             return
 
         res = r.json()
-        if res:
-            c = {}
-            for x in "id created_at file_url preview_file_url tag_string_character tag_string_copyright tag_string_artist tag_string_general".split():
-                try:
-                    c[x] = res[0][x]
-                except KeyError:
-                    pass
-            return c
+        # if res:
+            # c = {}
+            # for x in "id created_at file_url preview_file_url tag_string_character tag_string_copyright tag_string_artist tag_string_general".split():
+                # try:
+                    # c[x] = res[0][x]
+                # except KeyError:
+                    # pass
+            # return c
+        return res and res[0] # keep everything for now I am still deciding what to use
 
 
     # for shortcut command- ie. yuudachi,kc -> yuudachi_(kantai_collection)
